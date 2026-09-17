@@ -26,7 +26,7 @@ data.frame with n_new rows:
 \description{
 Projects new subjects into the WOVEN latent space and returns soft class
 assignments using a nearest-centroid classifier in latent space. Works for
-complete subjects (direct projection) and block-missing subjects (Nystrm).
+complete subjects (direct projection) and block-missing subjects (Nystrom).
 }
 \examples{
 set.seed(1)

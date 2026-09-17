@@ -23,7 +23,7 @@ test_that("woven() returns object of class 'woven'", {
         Y = d$groups, anchor_idx = d$anchor_idx,
         K = d$K, verbose = FALSE
     )
-    expect_s3_class(fit, "woven")
+    expect_s4_class(fit, "woven")
 })
 
 test_that("woven() print method runs without error", {
@@ -41,12 +41,13 @@ test_that("woven() uses mcca_dual for all V", {
         Y = d$groups, anchor_idx = d$anchor_idx,
         K = d$K, verbose = FALSE
     )
-    expect_false(is.null(fit$fit_mcca))
-    expect_null(fit$fit_v2)
-    expect_null(fit$fit_als)
-    expect_length(fit$W_list, 2L)
-    expect_equal(nrow(fit$W_list[[1]]), ncol(d$X1))
-    expect_equal(ncol(fit$W_list[[1]]), d$K)
+    expect_false(is.null(fit@fit_mcca))
+    # The "woven" S4 class has no fit_v2/fit_als slots at all (setClass is
+    # itself the guarantee that the old, since-removed ALS solvers left no
+    # trace on the object), so there is nothing further to assert here.
+    expect_length(fit@W_list, 2L)
+    expect_equal(nrow(fit@W_list[[1]]), ncol(d$X1))
+    expect_equal(ncol(fit@W_list[[1]]), d$K)
 })
 
 test_that("woven() scalar lambda broadcasts to all V modalities", {
@@ -55,7 +56,19 @@ test_that("woven() scalar lambda broadcasts to all V modalities", {
         Y = d$groups, anchor_idx = d$anchor_idx,
         K = d$K, lambdas = 0.5, verbose = FALSE
     )
-    expect_equal(fit$lambdas, c(0.5, 0.5))
+    expect_equal(fit@lambdas, c(0.5, 0.5))
+})
+
+test_that("accessor generics match direct slot access", {
+    d <- make_fixture()
+    fit <- woven(list(d$X1, d$X2),
+        Y = d$groups, anchor_idx = d$anchor_idx,
+        K = d$K, verbose = FALSE
+    )
+    expect_identical(Z(fit), fit@Z)
+    expect_identical(WList(fit), fit@W_list)
+    expect_identical(anchorIdx(fit), fit@anchor_idx)
+    expect_identical(singularValues(fit), fit@singular_values)
 })
 
 test_that("woven() errors if anchor_idx shorter than K", {

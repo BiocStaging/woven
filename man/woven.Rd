@@ -20,11 +20,20 @@ woven(
 )
 }
 \arguments{
-\item{X_list}{list of V numeric matrices, each n x p_v.
-Subjects missing an entire modality should have that matrix row set to NA.}
+\item{X_list}{either a named list of V numeric matrices, each n x p_v,
+with subjects missing an entire modality having that matrix row set to
+NA, or a \code{MultiAssayExperiment}. When a MultiAssayExperiment is
+supplied, each experiment becomes one modality, subjects are aligned to
+\code{colData(X_list)} via \code{sampleMap(X_list)}, and a subject not
+present in a given experiment gets an all-NA row for it automatically.}
 
-\item{Y}{integer or factor vector of length n  -- class labels for all subjects.
-Only anchor subjects' labels enter the supervised objective.}
+\item{Y}{integer or factor vector of length n  -- class labels for all
+subjects, in the same subject order as \code{X_list} (or as
+\code{colData(X_list)} when \code{X_list} is a MultiAssayExperiment).
+A single string is instead treated as the name of a \code{colData}
+column to use as labels, but only when \code{X_list} is a
+MultiAssayExperiment. Only anchor subjects' labels enter the supervised
+objective.}
 
 \item{anchor_idx}{integer vector  -- indices of fully-observed subjects
 (observed in all V modalities). Must have length >= K. If NULL (default),
@@ -70,27 +79,31 @@ hyperparameter search, cross-validation) to avoid rebuilding the graph each time
 \item{verbose}{logical  -- print progress (default TRUE)}
 }
 \value{
-object of class "woven" with:
+an object of S4 class \code{\linkS4class{woven}}. Key slots:
   \describe{
-    \item{$Z}{n x K matrix of consensus latent scores for ALL n subjects
+    \item{Z}{n x K matrix of consensus latent scores for ALL n subjects
       (anchors and block-missing). The primary output for downstream analysis.}
-    \item{$W_list}{list of V projection matrices, each p_v x K}
-    \item{$Z_anchors}{list of V anchor latent score matrices, each n_a x K}
-    \item{$singular_values}{K supervised canonical correlations}
-    \item{$anchor_idx}{indices of anchor (fully-observed) subjects}
-    \item{$Y_levels}{class label levels used during fitting}
-    \item{$K, $V, $n}{dimensions}
-    \item{$lambdas, $gamma_y}{hyperparameters}
+    \item{W_list}{list of V projection matrices, each p_v x K}
+    \item{Z_anchors}{list of V anchor latent score matrices, each n_a x K}
+    \item{singular_values}{K supervised canonical correlations}
+    \item{anchor_idx}{indices of anchor (fully-observed) subjects}
+    \item{Y_levels}{class label levels used during fitting}
+    \item{K, V, n}{dimensions}
+    \item{lambdas, gamma_y}{hyperparameters}
   }
+  See \code{\linkS4class{woven}} for the complete slot list.
 }
 \description{
 Learns a shared supervised latent space across V omics modalities, handling
-block-missing data via anchor-restricted alignment and Nystrm projection.
+block-missing data via anchor-restricted alignment and Nystrom projection.
 Labels Y are required  -- WOVEN is a supervised method (cf. DIABLO).
 }
 \details{
-For V=2, uses the closed-form supervised CCA solver (fast, exact).
-For V>=3, uses the ALS solver with label-kernel supervision.
+All V use the same closed-form dual SUMCOR MCCA solver: a single
+eigendecomposition of a block matrix built from the per-modality
+Laplacians and the label kernel, with no iterative optimization. For V=2
+this is equivalent to dual supervised CCA; for V>=3 it is the global
+optimum of the relaxed SUMCOR trace objective (see \code{woven_mcca_dual}).
 }
 \examples{
 set.seed(1)
@@ -108,7 +121,26 @@ X1[miss[, 1], ] <- NA
 X2[miss[, 2], ] <- NA
 # anchor_idx auto-detected from NA pattern -- no need to specify
 fit <- woven(list(X1, X2), Y = Y, K = K)
-dim(fit$Z) # 60 x 2 -- all subjects scored
+dim(Z(fit)) # 60 x 2 -- all subjects scored
+
+# Equivalently, from a MultiAssayExperiment: each experiment is one
+# modality, and subjects missing an experiment need no special handling.
+if (requireNamespace("MultiAssayExperiment", quietly = TRUE)) {
+    library(MultiAssayExperiment)
+    ids <- paste0("S", seq_len(n))
+    rownames(X1) <- ids
+    rownames(X2) <- ids
+    present1 <- ids[!is.na(X1[, 1])]
+    present2 <- ids[!is.na(X2[, 1])]
+    exps <- ExperimentList(list(
+        Mod1 = t(X1[present1, , drop = FALSE]),
+        Mod2 = t(X2[present2, , drop = FALSE])
+    ))
+    cd <- DataFrame(row.names = ids, group = Y)
+    mae <- MultiAssayExperiment(exps, colData = cd)
+    fit_mae <- woven(mae, Y = "group", K = K)
+    dim(Z(fit_mae)) # same 60 x 2 -- all subjects scored
+}
 
 }
 \seealso{

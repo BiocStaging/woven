@@ -28,11 +28,11 @@ utils::globalVariables(c(
 # Resolve modality argument: accepts integer index or name string
 .resolve_modality <- function(modality, fit) {
     if (is.character(modality)) {
-        idx <- match(modality, fit$mod_names)
+        idx <- match(modality, fit@mod_names)
         if (is.na(idx)) {
             stop(sprintf(
                 "Modality '%s' not found. Available: %s",
-                modality, paste(fit$mod_names, collapse = ", ")
+                modality, paste(fit@mod_names, collapse = ", ")
             ))
         }
         return(idx)
@@ -94,11 +94,11 @@ woven_plot_vip <- function(fit, modality = 1L, n_top = 20L,
                            feature_names = NULL, main = NULL) {
     stopifnot(inherits(fit, "woven"))
     modality <- .resolve_modality(modality, fit)
-    stopifnot(length(modality) == 1L, modality >= 1L, modality <= fit$V)
+    stopifnot(length(modality) == 1L, modality >= 1L, modality <= fit@V)
 
-    W <- fit$W_list[[modality]]
+    W <- fit@W_list[[modality]]
     p <- nrow(W)
-    svals <- fit$singular_values
+    svals <- fit@singular_values
     wts <- svals^2 / sum(svals^2)
     vip <- sqrt(p * rowSums(sweep(W^2, 2L, wts, "*")))
 
@@ -129,8 +129,8 @@ woven_plot_vip <- function(fit, modality = 1L, n_top = 20L,
 
     col_use <- .pal_woven[((modality - 1L) %% length(.pal_woven)) + 1L]
 
-    mod_label <- if (!is.null(fit$mod_names)) {
-        fit$mod_names[[modality]]
+    mod_label <- if (!is.null(fit@mod_names)) {
+        fit@mod_names[[modality]]
     } else {
         paste0("Modality ", modality)
     }
@@ -211,19 +211,19 @@ woven_plot_loadings <- function(fit, dim = 1L, n_top = 15L,
                                 feature_names = NULL, modality = NULL,
                                 main = NULL) {
     stopifnot(inherits(fit, "woven"))
-    stopifnot(length(dim) == 1L, dim >= 1L, dim <= fit$K)
+    stopifnot(length(dim) == 1L, dim >= 1L, dim <= fit@K)
 
     mod_seq <- if (is.null(modality)) {
-        seq_len(fit$V)
+        seq_len(fit@V)
     } else {
         vapply(modality, .resolve_modality, integer(1L), fit = fit)
     }
-    stopifnot(all(mod_seq >= 1L), all(mod_seq <= fit$V))
+    stopifnot(all(mod_seq >= 1L), all(mod_seq <= fit@V))
 
     # Build feature name list (length V)
     if (is.null(feature_names)) {
-        feature_names <- lapply(seq_len(fit$V), function(v) {
-            W <- fit$W_list[[v]]
+        feature_names <- lapply(seq_len(fit@V), function(v) {
+            W <- fit@W_list[[v]]
             if (!is.null(rownames(W))) {
                 rownames(W)
             } else {
@@ -232,20 +232,20 @@ woven_plot_loadings <- function(fit, dim = 1L, n_top = 15L,
         })
     } else if (is.character(feature_names)) {
         fn <- feature_names
-        feature_names <- lapply(seq_len(fit$V), function(v) fn)
+        feature_names <- lapply(seq_len(fit@V), function(v) fn)
     }
 
     col_pos <- "#0072B2"
     col_neg <- "#D55E00"
 
-    mod_names <- if (!is.null(fit$mod_names)) {
-        fit$mod_names
+    mod_names <- if (!is.null(fit@mod_names)) {
+        fit@mod_names
     } else {
-        paste0("Modality ", seq_len(fit$V))
+        paste0("Modality ", seq_len(fit@V))
     }
 
     rows <- lapply(mod_seq, function(v) {
-        W <- fit$W_list[[v]]
+        W <- fit@W_list[[v]]
         w <- W[, dim]
         p <- length(w)
         nm <- feature_names[[v]]
@@ -331,8 +331,8 @@ woven_plot_loadings <- function(fit, dim = 1L, n_top = 15L,
 #' @export
 woven_plot_variance <- function(fit, main = "Variance Explained") {
     stopifnot(inherits(fit, "woven"))
-    svals <- fit$singular_values
-    K <- fit$K
+    svals <- fit@singular_values
+    K <- fit@K
     prop_var <- svals^2 / sum(svals^2)
     cumvar <- cumsum(prop_var)
 

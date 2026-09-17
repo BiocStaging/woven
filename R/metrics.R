@@ -10,7 +10,7 @@
 #   woven_rv               -- RV coefficient vs ground-truth factor matrix
 #   woven_ess_retention    -- effective sample size retention (N_used / N_total)
 #   woven_effect_bias      -- subgroup effect estimate bias (CER-specific metric)
-#   woven_nystrom_error    -- leave-anchor-out Nystrm projection error
+#   woven_nystrom_error    -- leave-anchor-out Nystrom projection error
 #   woven_all_metrics      -- compute full battery, returns named list
 
 #  Silhouette
@@ -243,9 +243,9 @@ woven_effect_bias <- function(Z, outcome, treatment, labels, true_effects) {
     mean(biases, na.rm = TRUE)
 }
 
-#  Nystrm leave-anchor-out error
+#  Nystrom leave-anchor-out error
 
-#' Leave-anchor-out Nystrm projection error
+#' Leave-anchor-out Nystrom projection error
 #'
 #' For each held-out anchor subject, refits WOVEN without it, projects via
 #' direct W scoring, and computes ||Z_proj - Z_direct||.
@@ -264,19 +264,20 @@ woven_effect_bias <- function(Z, outcome, treatment, labels, true_effects) {
 #' @export
 woven_nystrom_error <- function(fit, X_list, n_loo = NULL, sigma_proj = NULL) {
     if (!inherits(fit, "woven")) stop("fit must be a woven object.")
-    anchor_idx <- fit$anchor_idx
+    anchor_idx <- fit@anchor_idx
     n_a <- length(anchor_idx)
+    n_total <- nrow(X_list[[1L]])
     if (is.null(n_loo)) n_loo <- min(20L, n_a)
     n_loo <- min(n_loo, n_a)
     loo_set <- sample(seq_len(n_a), n_loo)
-    V <- length(fit$W_list)
+    V <- length(fit@W_list)
 
     errors <- vapply(loo_set, function(j) {
         held_out <- anchor_idx[j]
         remain_idx <- anchor_idx[-j]
 
         # True score from full fit
-        Z_true <- Reduce("+", lapply(fit$Za_list, function(Z) Z[j, , drop = FALSE])) / V
+        Z_true <- Reduce("+", lapply(fit@Z_anchors, function(Z) Z[j, , drop = FALSE])) / V
 
         # LOO fit without this anchor
         X_loo <- lapply(X_list, function(X) {
@@ -284,12 +285,17 @@ woven_nystrom_error <- function(fit, X_list, n_loo = NULL, sigma_proj = NULL) {
             Xi[held_out, ] <- NA_real_
             Xi
         })
+        # woven_mcca_dual requires length(Y) == nrow(X_list[[1]]); only the
+        # anchor positions are ever read (Y_a <- Y[anchor_idx]), so
+        # non-anchor and held-out positions are left NA.
+        Y_full <- rep(NA_integer_, n_total)
+        Y_full[remain_idx] <- as.integer(factor(fit@Y_anchor[-j], levels = fit@Y_levels))
         mini <- tryCatch(
             woven_mcca_dual(X_loo,
                 anchor_idx = remain_idx,
-                Y = as.integer(as.factor(fit$Y_anchor[-j])),
-                K = fit$K, lambdas = fit$lambdas,
-                gamma_y = fit$gamma_y, verbose = FALSE
+                Y = Y_full,
+                K = fit@K, lambdas = fit@lambdas,
+                gamma_y = fit@gamma_y, verbose = FALSE
             ),
             error = function(e) NULL
         )
@@ -323,10 +329,10 @@ woven_nystrom_error <- function(fit, X_list, n_loo = NULL, sigma_proj = NULL) {
 #' @param outcome optional numeric vector (for effect bias)
 #' @param treatment optional 0/1 vector (for effect bias)
 #' @param true_effects optional named numeric (for effect bias)
-#' @param fit optional WOVEN fit object (for Nystrm LOO error)
-#' @param X1 optional matrix (for Nystrm LOO error)
-#' @param X2 optional matrix (for Nystrm LOO error)
-#' @param n_loo integer, anchors to hold out for Nystrm LOO (default 20)
+#' @param fit optional WOVEN fit object (for Nystrom LOO error)
+#' @param X1 optional matrix (for Nystrom LOO error)
+#' @param X2 optional matrix (for Nystrom LOO error)
+#' @param n_loo integer, anchors to hold out for Nystrom LOO (default 20)
 #' @return named list of metric values
 #' @keywords internal
 woven_all_metrics <- function(Z, labels, n_total,
@@ -368,7 +374,8 @@ woven_all_metrics <- function(Z, labels, n_total,
 
 #' Convenience wrapper: compute core metrics directly from a woven fit
 #'
-#' Calls [woven_all_metrics()] using \code{fit$Z} and \code{fit$n} so you
+#' Calls [woven_all_metrics()] using \code{Z(fit)} and the fit's subject
+#' count so you
 #' do not need to extract them manually. Returns silhouette, Davies-Bouldin,
 #' NMI, and ESS retention as a named numeric vector.
 #'
@@ -394,13 +401,13 @@ woven_all_metrics <- function(Z, labels, n_total,
 #' @export
 woven_metrics <- function(fit, labels, ...) {
     stopifnot(inherits(fit, "woven"))
-    stopifnot(length(labels) == fit$n)
+    stopifnot(length(labels) == fit@n)
 
-    scored <- !is.na(fit$Z[, 1L])
+    scored <- !is.na(fit@Z[, 1L])
     res <- woven_all_metrics(
-        Z       = fit$Z[scored, , drop = FALSE],
+        Z       = fit@Z[scored, , drop = FALSE],
         labels  = labels[scored],
-        n_total = fit$n,
+        n_total = fit@n,
         ...
     )
 

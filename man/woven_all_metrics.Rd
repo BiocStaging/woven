@@ -33,13 +33,13 @@ woven_all_metrics(
 
 \item{true_effects}{optional named numeric (for effect bias)}
 
-\item{fit}{optional WOVEN fit object (for Nystrm LOO error)}
+\item{fit}{optional WOVEN fit object (for Nystrom LOO error)}
 
-\item{X1}{optional matrix (for Nystrm LOO error)}
+\item{X1}{optional matrix (for Nystrom LOO error)}
 
-\item{X2}{optional matrix (for Nystrm LOO error)}
+\item{X2}{optional matrix (for Nystrom LOO error)}
 
-\item{n_loo}{integer, anchors to hold out for Nystrm LOO (default 20)}
+\item{n_loo}{integer, anchors to hold out for Nystrom LOO (default 20)}
 }
 \value{
 named list of metric values

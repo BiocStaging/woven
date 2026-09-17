@@ -2,7 +2,7 @@
 % Please edit documentation in R/metrics.R
 \name{woven_nystrom_error}
 \alias{woven_nystrom_error}
-\title{Leave-anchor-out Nystrm projection error}
+\title{Leave-anchor-out Nystrom projection error}
 \usage{
 woven_nystrom_error(fit, X_list, n_loo = NULL, sigma_proj = NULL)
 }

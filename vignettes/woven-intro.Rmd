@@ -25,17 +25,45 @@ knitr::opts_chunk$set(
 
 # Overview
 
-**WOVEN** (Weighted Omics View Embedding via Nystrom) is a supervised
-multi-omics integration method designed for clinical cohorts where patients
-are missing entire assay blocks. Standard methods such as `mixOmics::DIABLO`
-enforce a strict intersection constraint: every patient must have every
-modality, so patients missing even one block are discarded. In a typical
-three-platform study this can eliminate 50--80% of enrolled subjects,
-systematically excluding the sickest patients.
+Multi-omics studies increasingly combine several assay platforms on the
+same patients -- for example RNA-seq, DNA methylation, and proteomics run
+on the same cohort. Each platform produces an **assay block**: the complete
+set of features measured by that platform for a given subject (all genes
+for RNA-seq, all CpG sites for methylation, and so on). In practice, not
+every subject has every block. A blood draw can fail, an imaging visit can
+be missed, a sample can be too degraded to run on a given platform, and the
+result is that a subject is missing an entire block at once, not a handful
+of scattered values within it. This is different from ordinary
+feature-level missingness (a few dropped genes here and there), which most
+tools already handle; block-level missingness removes a whole modality for
+that subject in one go.
 
-WOVEN solves this by learning projection matrices W from **anchor subjects**
-(fully-observed complete cases), then projecting block-missing subjects using
-their available views. No feature-level imputation is performed.
+Methods built for fully-paired data, such as `mixOmics::DIABLO` (Singh et
+al. 2019), require every subject to have every block: a patient missing
+even one platform is dropped before the analysis begins. This has a real
+cost. If the patients who end up missing a block are not a random subset
+(for example, sicker patients who could not complete a full imaging
+workup), then the subjects who survive this filtering are a biased sample
+of the cohort, not a representative one, and any downstream comparison
+inherits that bias.
+
+**WOVEN** (Weighted Omics View Embedding via Nystrom) is a supervised
+multi-omics integration method that avoids this intersection requirement.
+It fits a shared latent space using only the **anchor subjects** --
+those observed in every block -- and then places every other subject into
+that same space using whatever blocks they do have, via a linear form of
+the
+[Nystrom method](https://en.wikipedia.org/wiki/Low-rank_matrix_approximations#Nystr%C3%B6m_approximation).
+The Nystrom method was originally developed to solve integral equations
+numerically, by approximating them using a small representative set of
+points. In spectral and kernel methods it has since been repurposed as an
+*out-of-sample extension*: a way to place a new point into an
+already-fitted low-dimensional embedding without recomputing the whole
+eigendecomposition, by reusing the mapping learned from a reference subset
+of points (Bengio et al. 2003). WOVEN's anchor subjects play that
+reference-subset role -- the projection matrices learned from them are
+applied directly to whatever features a block-missing subject has, with
+no feature-level imputation of the missing block.
 
 # Installation
 
@@ -248,8 +276,8 @@ The key advantage of WOVEN over `mixOmics::DIABLO` is **effective sample size
 all subjects with at least one observed view.
 
 ```{r ess-comparison}
-n_anchors <- length(fit$anchor_idx)    # what DIABLO would use
-n_woven   <- sum(!is.na(fit$Z[, 1]))  # what WOVEN scores
+n_anchors <- length(anchorIdx(fit))    # what DIABLO would use
+n_woven   <- sum(!is.na(Z(fit)[, 1]))  # what WOVEN scores
 
 cat(sprintf("DIABLO ESS: %d / %d (%.0f%%)\n",
             n_anchors, n, round(100 * n_anchors / n)))
@@ -263,18 +291,21 @@ introducing systematic bias in comparative effectiveness estimates.
 
 # Accessing Raw Results
 
-The fit object exposes all internal quantities for custom downstream analyses:
+The fit is an S4 object (class \code{woven}). Accessor functions expose the
+internal quantities most useful for custom downstream analyses; see
+\code{?`woven-class`} for the complete slot list if you need something an
+accessor does not cover.
 
 ```{r access}
-dim(fit$Z)          # n x K consensus latent scores for ALL subjects
-names(fit$W_list)   # one projection matrix per modality
-dim(fit$W_list$RNA) # p_rna x K
+dim(Z(fit))          # n x K consensus latent scores for ALL subjects
+names(WList(fit))    # one projection matrix per modality
+dim(WList(fit)$RNA)  # p_rna x K
 
 # Row names on Z come from row names of your input matrices
-# (set rownames on X_list matrices to get named rows in fit$Z)
+# (set rownames on X_list matrices to get named rows in Z(fit))
 ```
 
-`fit$Z` can be passed directly to survival analysis, clustering, or any
+`Z(fit)` can be passed directly to survival analysis, clustering, or any
 downstream model as a low-dimensional representation of the full cohort.
 
 # Session Info

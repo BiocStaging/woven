@@ -18,7 +18,8 @@ labels for all subjects (same Y passed to [woven()])}
 named numeric vector of metric values, printed as a tidy table
 }
 \description{
-Calls [woven_all_metrics()] using \code{fit$Z} and \code{fit$n} so you
+Calls [woven_all_metrics()] using \code{Z(fit)} and the fit's subject
+count so you
 do not need to extract them manually. Returns silhouette, Davies-Bouldin,
 NMI, and ESS retention as a named numeric vector.
 }
