@@ -77,7 +77,7 @@ test_that("woven_metrics returns named numeric vector from fit", {
     X1 <- matrix(rnorm(n * 30), n, 30)
     X2 <- matrix(rnorm(n * 20), n, 20)
 
-    fit <- woven(list(X1, X2), Y = groups, K = K)
+    fit <- woven(list(X1, X2), Y = groups, K = K, verbose = FALSE)
     m <- woven_metrics(fit, groups)
 
     expect_named(m, c("Silhouette", "Davies-Bouldin", "NMI", "ESS"))

@@ -53,20 +53,20 @@ compute_B <- function(X, lambda, Omega, XtX_precomp = NULL) {
 # X_list plus per-feature center/scale so out-of-sample subjects can be scaled
 # identically in woven_scores()/woven_predict().
 .scale_fit <- function(X_list) {
-    centers <- vector("list", length(X_list))
-    scales <- vector("list", length(X_list))
-    Xs <- lapply(seq_along(X_list), function(v) {
-        X <- X_list[[v]]
+    fitted <- lapply(X_list, function(X) {
         ctr <- colMeans(X, na.rm = TRUE)
         scl <- apply(X, 2L, stats::sd, na.rm = TRUE)
         ctr[!is.finite(ctr)] <- 0
         scl[!is.finite(scl) | scl == 0] <- 1
-        centers[[v]] <<- ctr
-        scales[[v]] <<- scl
-        sweep(sweep(X, 2L, ctr, "-"), 2L, scl, "/")
+        list(X = sweep(sweep(X, 2L, ctr, "-"), 2L, scl, "/"), center = ctr, scale = scl)
     })
+    Xs <- lapply(fitted, `[[`, "X")
     names(Xs) <- names(X_list)
-    list(X = Xs, center = centers, scale = scales)
+    list(
+        X = Xs,
+        center = lapply(fitted, `[[`, "center"),
+        scale = lapply(fitted, `[[`, "scale")
+    )
 }
 
 # Internal: apply stored center/scale (from .scale_fit) to new modality matrices.

@@ -5,7 +5,7 @@
 \alias{woven-package}
 \title{woven: Weighted Omics View Embedding via Nystrom for Incomplete Multi-Omics Data}
 \description{
-Supervised multi-omics integration for block-missing ("ragged") data. WOVEN learns a shared latent space across V omics modalities using only fully-observed anchor subjects, then projects block-missing subjects via Nystrom extension without feature-level imputation. Supervision via label-augmented cross-covariance (analogous to DIABLO) with optional sparse projection matrices (PMD). Designed for comparative effectiveness research where intersection-only methods introduce selection bias.
+Supervised multi-omics integration for block-missing ("ragged") data. WOVEN learns a shared latent space across V omics modalities using only fully-observed anchor subjects, then projects block-missing subjects via Nystrom extension without feature-level imputation. Supervision enters through a label-augmented cross-covariance (analogous to DIABLO), and projection matrices can optionally be ridge-regularized and univariately feature-screened for high-dimensional modalities. Designed for comparative effectiveness research where intersection-only methods introduce selection bias.
 }
 \seealso{
 Useful links:

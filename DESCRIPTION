@@ -17,10 +17,12 @@ Authors@R: c(
 Description: Supervised multi-omics integration for block-missing ("ragged") data.
     WOVEN learns a shared latent space across V omics modalities using only
     fully-observed anchor subjects, then projects block-missing subjects via
-    Nystrom extension without feature-level imputation. Supervision via
-    label-augmented cross-covariance (analogous to DIABLO) with optional
-    sparse projection matrices (PMD). Designed for comparative effectiveness
-    research where intersection-only methods introduce selection bias.
+    Nystrom extension without feature-level imputation. Supervision enters
+    through a label-augmented cross-covariance (analogous to DIABLO), and
+    projection matrices can optionally be ridge-regularized and univariately
+    feature-screened for high-dimensional modalities. Designed for
+    comparative effectiveness research where intersection-only methods
+    introduce selection bias.
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.3.3

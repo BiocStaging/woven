@@ -97,3 +97,33 @@ setValidity("woven", function(object) {
     }
     if (length(errs) == 0L) TRUE else errs
 })
+
+#' Internal S4 class holding the printable representation of summary(woven)
+#'
+#' Not exported. Exists solely so that \code{summary()} on a \code{woven}
+#' object can build its printed report via a real \code{show} method (as
+#' Bioconductor style requires) rather than calling \code{cat()} directly
+#' inside \code{summary()} itself, while \code{summary()} still returns the
+#' underlying metrics invisibly, unchanged.
+#'
+#' @slot V integer, number of modalities.
+#' @slot K integer, latent dimension.
+#' @slot n integer, total subjects.
+#' @slot mod_names optional character vector of modality names.
+#' @slot y_labels optional character vector of class labels.
+#' @slot n_scored integer, subjects with a non-NA latent score.
+#' @slot singular_values numeric vector.
+#' @slot metrics optional named numeric vector from \code{\link{woven_metrics}}.
+#' @keywords internal
+setClass("wovenSummary",
+    representation(
+        V = "integer",
+        K = "integer",
+        n = "integer",
+        mod_names = "ANY",
+        y_labels = "ANY",
+        n_scored = "integer",
+        singular_values = "numeric",
+        metrics = "ANY"
+    )
+)

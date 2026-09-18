@@ -46,7 +46,7 @@ univariate (ANOVA F-score vs Y) supervised pre-screening BEFORE the W
 recovery step. Default Inf disables this (all features used, original
 behavior). The eigendecomposition (Za_list) never depends on features --
 only the Laplacians and label kernel -- so screening only changes the
-W_v = X_a_v^T Ka_v^{-1} Za_v recovery: Ka_v = X_a_v X_a_v^T is built
+W_v = X_a_v^T Ka_v^\{-1\} Za_v recovery: Ka_v = X_a_v X_a_v^T is built
 from the screened columns only, which is a genuine re-fit of the
 min-norm interpolation on a reduced feature set (not a post-hoc
 truncation of an already-complete solution). Screened-out features get

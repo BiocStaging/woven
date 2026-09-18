@@ -467,22 +467,49 @@ setMethod("show", "woven", function(object) {
 #' fit <- woven(woven_example$X_complete, Y = woven_example$Y, K = 3L)
 #' summary(fit, labels = woven_example$Y)
 setMethod("summary", "woven", function(object, labels = NULL, ...) {
+    n_scored <- sum(!is.na(object@Z[, 1L]))
+    m <- if (!is.null(labels)) woven_metrics(object, labels) else NULL
+    show(methods::new("wovenSummary",
+        V = length(object@W_list),
+        K = object@K,
+        n = object@n,
+        mod_names = object@mod_names,
+        y_labels = object@Y_labels,
+        n_scored = n_scored,
+        singular_values = object@singular_values,
+        metrics = m
+    ))
+    invisible(m)
+})
+
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+#' Print a summary(woven) report
+#'
+#' Prints the report built by \code{\link{summary,woven-method}}. All
+#' \code{cat()} calls for the summary display live here, inside a
+#' \code{show} method, rather than inside \code{summary()} itself.
+#'
+#' @param object a \code{\linkS4class{wovenSummary}} object, as returned
+#'   internally by \code{summary()} on a \code{\linkS4class{woven}} fit.
+#' @return Invisibly returns \code{NULL}; called for its printed side effect.
+#' @keywords internal
+setMethod("show", "wovenSummary", function(object) {
     cat(sprintf(
         "WOVEN fit  [V=%d  K=%d  n=%d]\n",
-        length(object@W_list), object@K, object@n
+        object@V, object@K, object@n
     ))
     cat(sprintf(
         "  Modalities : %s\n",
-        paste(object@mod_names %||% seq_along(object@W_list), collapse = ", ")
+        paste(object@mod_names %||% seq_len(object@V), collapse = ", ")
     ))
     cat(sprintf(
         "  Classes    : %s\n",
-        paste(object@Y_labels %||% "unknown", collapse = ", ")
+        paste(object@y_labels %||% "unknown", collapse = ", ")
     ))
-    n_scored <- sum(!is.na(object@Z[, 1L]))
     cat(sprintf(
         "  Scored     : %d / %d  (ESS = %.2f)\n",
-        n_scored, object@n, n_scored / object@n
+        object@n_scored, object@n, object@n_scored / object@n
     ))
     cat(sprintf(
         "  Singular values: %s\n",
@@ -490,20 +517,17 @@ setMethod("summary", "woven", function(object, labels = NULL, ...) {
             collapse = ", "
         )
     ))
-    if (!is.null(labels)) {
-        m <- woven_metrics(object, labels)
+    if (!is.null(object@metrics)) {
+        m <- object@metrics
         cat(sprintf("\n  Silhouette : %6.3f\n", m["Silhouette"]))
         cat(sprintf("  Davies-Bouldin : %6.3f\n", m["Davies-Bouldin"]))
         cat(sprintf("  NMI        : %6.3f\n", m["NMI"]))
         cat(sprintf("  ESS        : %6.3f\n", m["ESS"]))
-        invisible(m)
     } else {
         cat("  (Pass labels = Y to compute silhouette / NMI / ESS)\n")
-        invisible(NULL)
     }
+    invisible(NULL)
 })
-
-`%||%` <- function(a, b) if (!is.null(a)) a else b
 
 #' Plot the WOVEN latent space
 #'

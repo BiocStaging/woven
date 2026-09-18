@@ -1,5 +1,7 @@
 ^\.\..Rcheck$
 ^\.\.Rcheck$
+^.*\.Rcheck$
+^.*\.BiocCheck$
 ^data-raw$
 ^scripts$
 ^slurm$
