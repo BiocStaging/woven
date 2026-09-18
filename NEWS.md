@@ -1,3 +1,30 @@
+# woven 0.99.3
+
+* Removed a stale DESCRIPTION claim about sparse projection matrices (PMD);
+  no such code path exists (`woven()` recovers dense projection matrices by
+  design, optionally ridge-regularized and feature-screened via `ridge_w`
+  and `screen_top`). DESCRIPTION now describes that mechanism instead.
+* `.scale_fit()` (internal) rewritten without `<<-` (BiocCheck NOTE).
+* `summary()`'s printed report now goes through a dedicated internal
+  `wovenSummary` S4 class with its own `show` method, so `cat()` output
+  only ever appears inside a `show` method (BiocCheck NOTE). `summary()`
+  still returns the metrics vector invisibly; printed output is unchanged.
+* Escaped literal braces in a `solver_mcca_dual.R` roxygen comment that
+  `R CMD check` was parsing as Rd markup ("Lost braces" NOTE).
+* `.Rbuildignore` now excludes `*.Rcheck`/`*.BiocCheck` directories, so a
+  leftover local check-output directory can no longer ship inside the
+  built source tarball (one had shipped in the 0.99.2 tarball).
+* Added `tests/testthat/test-precompute-plot-summary.R`, covering
+  `woven_precompute()` reuse/equivalence, a malformed-precomp error path,
+  `summary()` with and without labels, `plot()` with/without labels and
+  anchor-highlighting (including its out-of-range-dims error), and
+  `woven_nystrom_error()` as a regression test for the 0.99.2 `Za_list`
+  field-name bug fix. These close out the last open items from the
+  agentic Bioconductor review's testing-gap finding.
+* Verified clean from a rebuilt tarball: `R CMD check` 0 errors/0
+  warnings/0 notes; `BiocCheck` 0 errors/0 warnings/4 notes (down from 6,
+  all cosmetic); 88/88 tests pass.
+
 # woven 0.99.2
 
 * The object returned by `woven()` is now an S4 class (`woven`, defined in
